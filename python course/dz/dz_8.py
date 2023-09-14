@@ -1,160 +1,139 @@
-import os, re
+#Задача 38: Дополнить телефонный справочник возможностью изменения и удаления данных. 
+#Пользователь также может ввести имя или фамилию, 
+#и Вы должны реализовать функционал для изменения и удаления данных.
 
 
-def phone_format(n):  # форматирование телефонного номера
-    n = n.removeprefix("+")
-    n = re.sub("[ ()-]", "", n)
-    return format(int(n[:-1]), ",").replace(",", "-") + n[-1]
+def print_records(file_name: str):
+    with open(file_name, 'r', encoding='utf-8') as data:
+        for line in data:
+            print(*line.split(';'), end='')
 
+def input_records(file_name: str):
+    with open(file_name, 'r+', encoding='utf-8') as data:
+        record_id = 0
+        for line in data:
+            if line != '':
+                record_id = line.split(';', 1)[0]
+        print('Введите фамилию, имя, отчество через пробел и номер телефона ')
+        line = f'{int(record_id) + 1};' + ';'.join(input().split()[:12]) + ';\n'
+        confirm = confirmation('добавление записи')
+        if confirm == 'y':
+            data.write(line)
 
-def printData(data):  # Функция вывода телефонной книги в консоль
-    phoneBook = []
-    splitLine = "=" * 49
-    print(splitLine)
-    print(" №  Lastname        Name          Phone Numbers")
-    print(splitLine)
-    personID = 1
-
-    for contact in data:
-        lastName, name, phone = contact.rstrip().split(",")
-        phoneBook.append(
-            {
-                "ID": personID,
-                "lastName": lastName,
-                "name": name,
-                "phone": phone_format(phone),
-            }
-        )
-        personID += 1
-
-    for contact in phoneBook:
-        personID, lastName, name, phone = contact.values()
-        print(f"{personID:>2}. {lastName:<15} {name:<10} -- {phone:<15}")
-
-    print(splitLine)
-
-
-def showContacts(fileName):  # Функция открытия телефонной книги
-    os.system("cls")
-    phoneBook = []
-    with open(fileName, "r", encoding="UTF-8") as file:
-        data = sorted(file.readlines())
-        printData(data)
-    input("\n--- press any key ---")
-
-
-def addContact(fileName):  # Функция добавления нового контакта в телефонную книгу
-    os.system("cls")
-    with open(fileName, "a", encoding="UTF-8") as file:
-        res = ""
-        res += input("Input a Surname of Contact: ") + ","
-        res += input("Input a Name of Contact: ") + ","
-        res += input("Input a Phone Number of Contact: ")
-
-        file.write(res + "\n")
-
-    input("\nContact was successfully added!\n--- press any key ---")
-
-
-def findContact(fileName):  # Функция поиска контактов в телефонной книге
-    os.system("cls")
-    target = input("Input Item of Contact for searching: ")
-    result = []
-    with open(fileName, "r", encoding="UTF-8") as file:
-        data = file.readlines()
-        for person in data:
-            if target in person:
-                result.append(person)
-                # break
-
-    if len(result) != 0:
-        printData(result)
+def find_char():
+    print('Выберите характеристику:')
+    print('0 - id, 1 - фамилия, 2 - имя, 3 - отчество, 4 - номер, q - выйти')
+    char = input()
+    while char not in ('0', '1', '2', '3', '4', 'q'):
+        print('Введены неверные данные')
+        print('Выберите характеристику:')
+        print('0 - id, 1 - фамилия, 2 - имя, 3 - отчество, 4 - номер, q - выйти')
+        char = input()
+    if char != 'q':
+        inp = input('Введите значение\n')
+        return char, inp
     else:
-        print(f"There is no Contact with this Item '{target}'.")
+        return 'q', 'q'
 
-    input("--- press any key ---")
+def find_records(file_name: str, char, condition):
+    if condition != 'q':
+        printed = False
+        with open(file_name, 'r', encoding='utf-8') as data:
+            for line in data:
+                if condition == line.split(';')[int(char)]:
+                    print(*line.split(';'))
+                    printed = True
+        if not printed:
+            print("Не найдено")
+        return printed
 
 
-def changeContact(fileName):  # Функция изменения информации в контакте
-    os.system("cls")
-    phoneBook = []
-    with open(fileName, "r", encoding="UTF-8") as file:
-        data = sorted(file.readlines())
-        printData(data)
-
-        numberContact = int(
-            input("Input Number of Contact for changing or 0 for return Main Menu: ")
-        )
-        print(data[numberContact - 1].rstrip().split(","))
-        if numberContact != 0:
-            newLastName = input("Input new Lastname: ")
-            newName = input("Input new Name: ")
-            newPhone = input("Input new Phone: ")
-            data[numberContact - 1] = (
-                newLastName + "," + newName + "," + newPhone + "\n"
-            )
-            with open(fileName, "w", encoding="UTF-8") as file:
-                file.write("".join(data))
-                print("\nContact was successfully changed!")
-                input("\n--- press any key ---")
+def check_id_record(file_name: str, text: str):
+    decision = input(f'Вы знаете id записи которую хотите {text}? 1 - да, 2 - нет, q - выйти\n')
+    while decision not in ('1', 'q'):
+        if decision != '2':
+            print('Введены неверные данные')
         else:
-            return
+            find_records(path, *find_char())
+        decision = input(f'Вы знаете id записи которую хотите {text}? 1 - да, 2 - нет, q - выйти\n')
+    if decision == '1':
+        record_id = input('Введите id, q - выйти\n')
+        while not find_records(file_name, '0', record_id) and record_id != 'q':
+            record_id = input('Введите id, q - выйти\n')
+        return record_id
+    return decision
+
+def confirmation(text: str):
+    confirm = input(f"Подтвердите {text} записи: y - да, n - нет\n")
+    while confirm not in ('y', 'n'):
+        print('Введены неверные данные')
+        confirm = input(f"Подтвердите {text} записи: y - да, n - нет\n")
+    return confirm
+
+def replace_record_line(file_name: str, record_id, replaced_line: str):
+    replaced = ''
+    with open(file_name, 'r', encoding='utf-8') as data:
+        for line in data:
+            replaced += line
+            if record_id == line.split(';', 1)[0]:
+                replaced = replaced.replace(line, replaced_line)
+    with open(file_name, 'w', encoding='utf-8') as data:
+        data.write(replaced)
 
 
-def deleteContact(fileName):  # Функция удаления контакта из телефонной книги
-    os.system("cls")
-    with open(fileName, "r+", encoding="UTF-8") as file:
-        data = sorted(file.readlines())
-        printData(data)
-
-        numberContact = int(
-            input("Input Number of Contact for deleting or 0 for return Main Menu: ")
-        )
-        if numberContact != 0:
-            print(f"Deleting record: {data[numberContact-1].rstrip().split(',')}\n")
-            data.pop(numberContact - 1)
-            with open(fileName, "w", encoding="UTF-8") as file:
-                file.write("".join(data))
-
-        else:
-            return
-
-    input("--- press any key ---")
+def change_records(file_name: str):
+    record_id = check_id_record(file_name, 'изменить')
+    if record_id != 'q':
+        replaced_line = f'{int(record_id)};' + ';'.join(
+            input('Введите фамилию, имя, отчество через пробел и номер телефона\n').split()[:12]) + ';\n'
+        confirm = confirmation('изменение')
+        if confirm == 'y':
+            replace_record_line(file_name, record_id, replaced_line)
 
 
-def drawInterface():  # Функция рисования интерфейса главного меню
-    print("#####   PHONE BOOK   #####")
-    print("=" * 26)
-    print(" [1] -- Show Contacts")
-    print(" [2] -- Add Contacts")
-    print(" [3] -- Find Contacts")
-    print(" [4] -- Change Contacts")
-    print(" [5] -- Delete Contacts")
-    print("\n [0] -- Exit")
-    print("=" * 26)
+def delete_records(file_name: str):
+    record_id = check_id_record(file_name, 'удалить')
+    if record_id != 'q':
+        confirm = confirmation('удаление')
+        if confirm == 'y':
+            replace_record_line(file_name, record_id, '')
 
+# создание или открытие справочника
+path = 'phon.txt'
 
-def main(file_name):  # Функция реализации главного меню
-    while True:
-        os.system("cls")
-        drawInterface()
-        userChoice = int(input("Input a Number for 1 to 5 or 0 for Exit: "))
+try:                        
+    file = open(path, 'r')  
+except IOError:            
+    print('\nСоздан новый справочник -> phon.txt \n')
+    file = open(path, 'w')
+finally:                    
+    file.close()
 
-        if userChoice == 1:
-            showContacts(file_name)
-        elif userChoice == 2:
-            addContact(file_name)
-        elif userChoice == 3:
-            findContact(file_name)
-        elif userChoice == 4:
-            changeContact(file_name)
-        elif userChoice == 5:
-            deleteContact(file_name)
-        elif userChoice == 0:
-            print("Thank you!")
-            return
+# Реализация главного меню
+actions = {'1': 'посмотреть',
+           '2': 'добавить',
+           '3': 'найти',
+           '4': 'изменить',
+           '5': 'удалить',
+           'q': 'выйти'}
 
-
-path = "phonebook.txt"
-
-main(path)
+action = None
+while action != 'q':
+    print('\nВведите число для действия или q для выхода?\n', *[f'{i} - {actions[i]}' for i in actions])
+    action = input()
+    while action not in actions:
+        print('\nВведите число для действия или q для выхода?\n', *[f'{i} - {actions[i]}' for i in actions])
+        action = input()
+        if action not in actions:
+            print('Введены неверные данные')
+    if action != 'q':
+        if action == '1':
+            print_records(path)
+        elif action == '2':
+            input_records(path)
+        elif action == '3':
+            find_records(path, *find_char())
+        elif action == '4':
+            change_records(path)
+        elif action == '5':
+            delete_records(path)
